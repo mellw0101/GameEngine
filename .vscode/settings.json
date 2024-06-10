@@ -4,6 +4,9 @@
         "string": "cpp",
         "format": "cpp",
         "*.tcc": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "chrono": "cpp",
+        "text_encoding": "cpp",
+        "typeinfo": "cpp"
     }
 }
