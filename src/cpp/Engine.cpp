@@ -1,5 +1,5 @@
 #include "../include/Engine.hpp"
-#include <algorithm>
+//#include <algorithm>
 
 using namespace std;
 
@@ -7,16 +7,16 @@ using namespace std;
     Engine::Time* Engine::Time::instance = nullptr;
     mutex Engine::Time::mutex;
     
-    void setBit     ( u32 &num, u32 bit ) // Set the bit at position `bit` to 1
-    {
-        num |= (1u << bit);
-    }
-    void clearBit   ( u32 &num, u32 bit ) // Clear the bit at position `bit` to 0
-    {
-        num &= ~(1u << bit);
-    }
+//    void setBit     ( u32 &num, u32 bit ) // Set the bit at position `bit` to 1
+//    {
+//        num |= (1u << bit);
+//    }
+//    void clearBit   ( u32 &num, u32 bit ) // Clear the bit at position `bit` to 0
+//    {
+//        num &= ~(1u << bit);
+//    }
 #pragma endregion
-#pragma region Engine::Object2D
+#pragma region Object2D
     auto Engine::   Object::    init        ( const ObjectData2D& data )                ->  void
     {
         this->data = data;
@@ -39,7 +39,7 @@ using namespace std;
     }
     auto Engine::   Object::    isStatic    ()                                    const ->  bool
     {
-        return (data.state & (ObjectState::STATIC)) ? true : false;
+        return (data.state & (ObjectState::STATIC));
     }
     auto Engine::   Object::    rect        ()                                    const ->  SDL_Rect
     {
@@ -55,8 +55,8 @@ using namespace std;
         return data.state;
     }
 #pragma endregion
-#pragma region Engine::Base
-    auto Engine::   Base::  run             ()                        ->  int
+#pragma region 'Core'
+    auto Engine::Core::  run             ()                        ->  int
     {
         init();
         while (running)
@@ -72,11 +72,11 @@ using namespace std;
         cleanup();
         return 0;
     }
-    auto Engine::   Base::  createObject    ( const Object& object )  ->  void
+    auto Engine::Core::  createObject    ( const Object& object )  ->  void
     {
         objects.emplace_back(object);
     }
-    auto Engine::   Base::  init            ()                        ->  int
+    auto Engine::Core::  init            ()                        ->  int
     {
         initSDL();
         createWindow();
@@ -84,19 +84,18 @@ using namespace std;
         setupKeys();
         return 0;
     }
-    
     #pragma region 'Sub Functions' run
-        auto Engine::   Base::  cleanup         ()  ->  void
+        auto Engine::Core::  cleanup         ()  ->  void
         {
             SDL_DestroyRenderer(renderer);
             SDL_DestroyWindow(window);
             SDL_Quit();
         }
-        auto Engine::   Base::  logic           ()  ->  void
+        auto Engine::Core::  logic           ()  ->  void
         {
             KeyObject::Instance()->handleKeyEvent();
         }
-        auto Engine::   Base::  applyPhysics    ()  ->  void
+        auto Engine::Core::  applyPhysics    ()  ->  void
         {
             for (auto& object : objects)
             {
@@ -110,7 +109,7 @@ using namespace std;
                 object.move({0.0f, GRAVITY});
 
                 // Check if the object is on the ground
-                if (object.data.position.y + object.data.h == SCREEN_HEIGHT)
+                if (object.data.position.y + (f32)object.data.h == (f32)SCREEN_HEIGHT)
                 {
                     object.data.state |= ObjectState::ON_GROUND;
                 }
@@ -128,24 +127,24 @@ using namespace std;
                 }
             }
         }     
-        auto Engine::   Base::  clear           ()  ->  void
+        auto Engine::Core::  clear           ()  ->  void
         {
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);
         }
-        auto Engine::   Base::  draw            ()  ->  void
+        auto Engine::Core::  draw            ()  ->  void
         {
             for (auto const& object : objects)
             {
                 object.draw(renderer);
             }
         }
-        auto Engine::   Base::  update          ()  ->  void
+        auto Engine::Core::  update          ()  ->  void
         {
             SDL_RenderPresent(renderer);        // Update screen
             SDL_Delay(8);                  // Approximately 60 frames per second
         }
-        auto Engine::   Base::  pollForEvents   ()  ->  void
+        auto Engine::Core::  pollForEvents   ()  ->  void
         {
             while (SDL_PollEvent(&event))
             {
@@ -157,7 +156,7 @@ using namespace std;
         }
     #pragma endregion
     #pragma region 'Sub Functions' init
-        auto Engine::   Base::  initSDL         ()  ->  int
+        auto Engine::Core::  initSDL         ()  ->  int
         {
             if (SDL_Init(SDL_INIT_VIDEO) < 0)
             {
@@ -166,7 +165,7 @@ using namespace std;
             }
             return 0;
         }
-        auto Engine::   Base::  createWindow    ()  ->  int
+        auto Engine::Core::  createWindow    ()  ->  int
         {
             window = SDL_CreateWindow
             (
@@ -184,7 +183,7 @@ using namespace std;
             }
             return 0;
         }
-        auto Engine::   Base::  createRenderer  ()  ->  int
+        auto Engine::Core::  createRenderer  ()  ->  int
         {
             renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
             if (!renderer)
@@ -195,7 +194,7 @@ using namespace std;
             }
             return 0;
         }
-        auto Engine::   Base::  setupKeys       ()  ->  void
+        auto Engine::Core::  setupKeys       ()  ->  void
         {
             KeyObject::Instance()->addActionForKey(SDL_SCANCODE_W,      [&]()  ->  void
             {
@@ -249,7 +248,7 @@ using namespace std;
         }
     #pragma endregion
     
-    Engine::Base::          Base            ( const string& window_title, int window_width, int window_height )
+    Engine::Core::          Core            ( const string& window_title, int window_width, int window_height )
     : window_title(window_title), SCREEN_WIDTH(window_width), SCREEN_HEIGHT(window_height)
     {
         Engine::SCREEN_WIDTH    = SCREEN_WIDTH;

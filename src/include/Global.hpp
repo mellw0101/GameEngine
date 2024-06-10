@@ -14,6 +14,15 @@
 
 using namespace std;
 
+#pragma region 'Static Obj Ptr`s'
+    class Log;
+    static Log* LogInstance = nullptr;
+
+#pragma endregion
+#pragma region 'Mutable Vars'
+    inline bool DEBUG_MODE = false;
+
+#pragma endregion
 #pragma region 'Macros'
     #define SDL2_ERROR_CHECK( x ) if (x < 0) { return -1; }
     #define FORCE_INLINE __attribute__((always_inline)) static __inline__
@@ -58,16 +67,6 @@ using namespace std;
     f32 constexpr FPS       = 120.0f;
     f32 constexpr FRAMETIME = 1000.0f / FPS;
 #pragma endregion
-#pragma region 'Structs'
-    template <typename T>
-    struct __PAIR_T__
-    {
-        T x, y;
-    };
-    template <typename T>
-    using Pair = __PAIR_T__<T>;
-#pragma endregion
-
 #pragma region 'helpers'
     template <typename T>
     FORCE_INLINE void swap ( T& a, T& b )
@@ -222,5 +221,8 @@ namespace Engine
 
         typedef class __FYSICS_MAP_OBJECT_T__ FysicsMapObject;
         static FysicsMapObject* FysicsMapObjectInstanse = nullptr;
+
+        class Core;
+        static Core* CoreInstance = nullptr;
     #pragma endregion
 }

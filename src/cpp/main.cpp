@@ -5,12 +5,13 @@ using namespace std;
 
 const char* const& Title    = "Test";
 
+Engine::Core *engine = Engine::Core::Inst(Title, 800, 600);
+
 int main(int argc, char* argv[])
 {
-    Engine::Base engine{Title, 800, 600};
-    
+    Log::Inst()->log("Starting engine...");
     // Main Player
-    engine.createObject({{
+    engine->createObject({{
         {Engine::SCREEN_WIDTH / 2, Engine::SCREEN_HEIGHT / 2},
         10,
         10,
@@ -18,12 +19,13 @@ int main(int argc, char* argv[])
         Engine::ObjectState::IS_PLAYER
     }});
 
-    engine.createObject({{
+    engine->createObject({{
         {Engine::SCREEN_WIDTH / 2, Engine::SCREEN_HEIGHT / 2},
         50,
         50,
         5,
         Engine::ObjectState::STATIC
     }});
-    return engine.run();
+
+    return engine->run();
 }

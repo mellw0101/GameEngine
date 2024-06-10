@@ -7,7 +7,7 @@
 
 namespace Engine
 {
-    #pragma region 'Tools'
+    #pragma region Tools
         class Tools
         {
             // Gravitational constant in pixels per frame squared
@@ -188,7 +188,7 @@ namespace Engine
             FRect;
         };
     #pragma endregion
-    #pragma region 'Object2D'
+    #pragma region Object2D
         /**
             @struct ObjectData
             @brief This struct holds the data of the object Data For 2D.
@@ -227,7 +227,7 @@ namespace Engine
         }
         Object;
     #pragma endregion
-    #pragma region 'KeyObject'
+    #pragma region KeyObject
         /**
             @brief This map holds the keys and vector of functions.
             */
@@ -297,19 +297,20 @@ namespace Engine
         }
         KeyObject;
     #pragma endregion
-    #pragma region 'Base'
+    #pragma region Core
         /**
             @class @b 'Base'
             @return @c 
             @brief Base class To Control The Engine 
             */
-        class Base
+        class Core
         {
-            private: s32                    SCREEN_WIDTH;
+        private:
+            s32  SCREEN_WIDTH;
             private: s32                    SCREEN_HEIGHT;
             private: string                 window_title;
             private: u32                    frames;
-            
+
             /**
                 @brief The state of the engine (running, paused, etc.) Using Only Bitwise Operations
                 @note if (state & (1 << 0)) != 0, then the engine is running
@@ -318,9 +319,12 @@ namespace Engine
 
             private: SDL_Window*            window      = nullptr;
             private: SDL_Renderer*          renderer    = nullptr;
-            private: bool                   running     = true;
+
             private: SDL_Event              event;
-            private: vec<Engine::Object>    objects;
+
+        public:
+            vec<Engine::Object> objects;
+            bool running = true;
 
             /**
                 @b Function: @c 'run'
@@ -332,7 +336,22 @@ namespace Engine
             public : auto run           ()                          ->  int;
             private: auto init          ()                          ->  int;
             public : auto createObject  ( const Object& object )    ->  void;
-            
+
+            FORCE_INLINE Core* Inst ( const string& window_title, int window_width, int window_height, bool DEBUG = false)
+            {
+                if ( DEBUG ) {
+                    DEBUG_MODE = true;
+                }
+                if ( Engine::CoreInstance == nullptr ) {
+                    lock_guard<std::mutex> lock(mutex);
+                    if ( Engine::CoreInstance == nullptr ) {
+                        Engine::CoreInstance = new Core{window_title, window_width, window_height};
+                    }
+                }
+                return Engine::CoreInstance;
+            }
+            void shutdown();
+
             #pragma region 'Sub Functions' run
                 private: auto cleanup       ()  ->  void;
                 #pragma region 'logic Sub Functions' 
@@ -351,7 +370,7 @@ namespace Engine
                 private : auto setupKeys        ()  ->  void;
             #pragma endregion
             
-            public: Base ( const string& window_title, int window_width, int window_height );
+            public: Core ( const string& window_title, int window_width, int window_height );
         };
     #pragma endregion
 }
