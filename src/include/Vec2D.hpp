@@ -2,22 +2,26 @@
 
 #include "Global.hpp"
 
-class Vec2D
+typedef class __VEC_2D_T__
 {
 public:
     f32 x, y;
 
     // Constructors
-    Vec2D()
+    __VEC_2D_T__ ()
     : x(0), y(0)
     {}
     
-    Vec2D(f32 x, f32 y)
+    __VEC_2D_T__ ( f32 x, f32 y )
     : x(x), y(y)
     {}
 
+    __VEC_2D_T__ ( s32 x, s32 y )
+    : x(static_cast<f32>(x)), y(static_cast<f32>(y))
+    {}
+
     // Add another vector to this one
-    Vec2D& operator += ( const Vec2D& other )
+    __VEC_2D_T__& operator += ( const __VEC_2D_T__& other )
     {
         x += other.x;
         y += other.y;
@@ -25,13 +29,25 @@ public:
     }
 
     // Multiply this vector by a scalar
-    Vec2D& operator *= ( float scalar )
+    __VEC_2D_T__& operator *= ( float scalar )
     {
         x *= scalar;
         y *= scalar;
         return *this;
     }
-};
+
+    // Retrieve the integer x component
+    s32 getXInt() const
+    {
+        return static_cast<s32>(x);
+    }
+
+    // Retrieve the integer y component
+    s32 getYInt() const
+    {
+        return static_cast<s32>(y);
+    }
+}Vec2D;
 
 // Non-member function to add two vectors
 inline Vec2D operator + ( Vec2D lhs, const Vec2D& rhs )

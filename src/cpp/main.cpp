@@ -146,14 +146,15 @@ int main(int argc, char* argv[])
     // Game game;
     // return game.run();
 
-    Engine::Base engine{"Move the Dot", 400, 300};
-    engine.createObject({
-        Engine::SCREEN_WIDTH / 2,
-        Engine::SCREEN_HEIGHT / 2,
+    Engine::Base engine{"Move the Dot", 800, 600};
+    engine.createObject({{
+        {Engine::SCREEN_WIDTH / 2, Engine::SCREEN_HEIGHT / 2},
+        {0, 0},
         10,
         10,
-        5
-    });
+        5,
+        0
+    }});
 
     return engine.run();
 }
