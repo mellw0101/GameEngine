@@ -1,76 +1,79 @@
-#include <SDL2/SDL.h>
-#include <iostream>
-#include <string>
+#include "../include/Engine.hpp"
 
-using namespace std;
-
-#define CHECK_KEY(key, statement) if (state[SDL_SCANCODE_##key]) statement 
-
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 600;
-const int DOT_SIZE = 10;
-
-
-struct Dot
-{
-    int x       = SCREEN_WIDTH / 2,
-        y       = SCREEN_HEIGHT / 2,
-        speed   = 5,
-        size    = 10;
-};
-
+/**
+    @class Game
+    
+    @brief This class is responsible for managing the game loop and the game objects.
+    */
 class Game
 {
-private:
-    SDL_Window*     window      = nullptr;
-    SDL_Renderer*   renderer    = nullptr;
-    bool            running     = true;
-    SDL_Event       event;
-    Dot             dot;
+    private: SDL_Window*             window      = nullptr;
+    private: SDL_Renderer*           renderer    = nullptr;
+    private: bool                    running     = true;
+    private: SDL_Event               event;
+    private: Engine::Object          dot;
+    private: vector<Engine::Object>  objects;
 
-    auto init (const string& title, int width, int height) -> int
+    /* Initialization Subsystems */ #pragma region
+        private: auto init_sdl          ()                                              -> int
+        {
+            if (SDL_Init(SDL_INIT_VIDEO) < 0)
+            {
+                running = false;
+                return -1;
+            }
+            return 0;
+        }
+        private: auto create_window     ( const string& title, int width, int height )  -> int
+        {
+            window = SDL_CreateWindow
+            (
+                title.c_str(),
+                SDL_WINDOWPOS_UNDEFINED,
+                SDL_WINDOWPOS_UNDEFINED,
+                width,
+                height,
+                SDL_WINDOW_SHOWN
+            );
+            if (!window)
+            {
+                SDL_Quit();
+                return -1;
+            }
+            return 0;
+        }
+        private: auto create_renderer   ()                                              -> int
+        {
+            renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+            if (!renderer)
+            {
+                SDL_DestroyWindow(window);
+                SDL_Quit();
+                return -1;
+            }
+            return 0;
+        }
+        private: auto create_objects    ()                                              -> void
+        {
+            dot.init({ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, DOT_SIZE, DOT_SIZE, 10 });
+            objects.push_back(dot);
+        }
+    #pragma endregion
+    private: auto init      ( const string& title, int width, int height )  -> int
     {
-        if (SDL_Init(SDL_INIT_VIDEO) < 0)
-        {
-            running = false;
-        }
-
-        window = SDL_CreateWindow
-        (
-            title.c_str(),
-            SDL_WINDOWPOS_UNDEFINED,
-            SDL_WINDOWPOS_UNDEFINED,
-            width,
-            height,
-            SDL_WINDOW_SHOWN
-        );
-
-        if (!window)
-        {
-            SDL_Quit();
-            return -1;
-        }
-
-        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    
-        if (!renderer)
-        {
-            SDL_DestroyWindow(window);
-            SDL_Quit();
-            return -1;
-        }
-
+        init_sdl();
+        create_window(title, width, height);
+        create_renderer();
+        create_objects();
         return 0;
     }
-
-    auto cleanup () -> void
+    private: auto cleanup   ()                                              -> void
     {
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
     }
-
-    auto logic () -> void
+    private: auto logic     ()                                              -> void
     {
         /// Handle keyboard input
         const Uint8* state = SDL_GetKeyboardState(NULL);
@@ -80,58 +83,39 @@ private:
         }
         if (state[SDL_SCANCODE_W])
         {
-            if (dot.y > 0)
-            {
-                dot.y -= dot.speed;
-            }
+            dot.move(Engine::Direction::UP);
         }
         if (state[SDL_SCANCODE_S])
         {
-            if (dot.y + DOT_SIZE < SCREEN_HEIGHT)
-            {
-                dot.y += dot.speed;
-            }
+            dot.move(Engine::Direction::DOWN);
         }
         if (state[SDL_SCANCODE_A])
         {
-            if (dot.x > 0)
-            {
-                dot.x -= dot.speed;
-            }
+            dot.move(Engine::Direction::LEFT);
         }
         if (state[SDL_SCANCODE_D])
         {
-            if (dot.x + DOT_SIZE < SCREEN_WIDTH)
-            {
-                dot.x += dot.speed;
-            }
+            dot.move(Engine::Direction::RIGHT);
         }
     }
-
-    auto clear () -> void
+    private: auto clear     ()                                              -> void
     {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
     }
-
-    auto draw () -> void
+    private: auto draw      ()                                              -> void
     {
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        SDL_Rect dotRect = { dot.x, dot.y, DOT_SIZE, DOT_SIZE };
-        SDL_RenderFillRect(renderer, &dotRect);
+        dot.draw(renderer);
     }
-
-    auto update () -> void
+    private: auto update    ()                                              -> void
     {
         SDL_RenderPresent(renderer);        // Update screen
         SDL_Delay(16);                  // Approximately 60 frames per second
     }
 
-public:
-    Game() {}
-    ~Game() {}
-
-    auto run () -> int
+    public:  Game() {}
+    public:  ~Game() {}
+    public:  auto run () -> int
     {
         if (init("Move the Dot", SCREEN_WIDTH, SCREEN_HEIGHT) < 0)
         {

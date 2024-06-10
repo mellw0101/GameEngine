@@ -1,67 +1,15 @@
 #!/bin/bash
 
-# BASE_DIR="$PWD"
-
-# SRC_DIR="$BASE_DIR/src"
-# BUILD_DIR="$BASE_DIR/build"
-
-# OBJ_DIR="$BUILD_DIR/obj"
-
-# Configure() {
-#     check_dir() {
-#         if [ ! -d "$1" ]; then
-#             echo "Directory '$1' does not exist."
-#             mkdir -p "$1"
-#             return 1
-#         fi
-#         return 0
-#     }
-
-#     check_dir "$SRC_DIR"
-#     check_dir "$BUILD_DIR"
-#     check_dir "$OBJ_DIR" 
-
-#     return 0
-# }
-
-# Compile() {
-#     directory="$1"
-
-#     # Check if the directory exists
-#     if [ ! -d "$directory" ]; then
-#         echo "Directory '$directory' does not exist."
-#         return 1
-#     fi
-    
-#     # Iterate over the files in the directory
-#     for file in "$directory"/*; do
-#         if [ -f "$file" ]; then
-#             clang++ -c "$SRC_DIR/$file" -o "$OBJ_DIR/${file%.*}.o"
-#         fi
-#     done
-# }
-
-# Configure
-# Compile
-
-
-
-
 # Defines the project base vars
-    BASE_DIR=$(pwd)                             # Get the current working directory and store it in BASE_DIR (base directory of the project)
-    SRC_DIR=$BASE_DIR/src                       # Source directory of the project (src directory stores all source files and are the only files to be modified the rest is automated)
-    C_SRC_DIR=$BASE_DIR/src/c                   # C source directory of the project (c directory stores all the C source files)
-    CPP_SRC_DIR=$BASE_DIR/src/cpp               # C source directory of the project (c directory stores all the C source files)
-    AS_SRC_DIR=$BASE_DIR/src/as                 # Assembly source directory of the project (as directory stores all the assembly source files)
-    BUILD_DIR=$BASE_DIR/build                   # Build directory of the project (build directory stores all the compiled files and the final executable)
-    BIN_DIR=$BASE_DIR/build/bin                 # Binary directory of the project (bin directory stores the executable files for the project)
-    OBJ_DIR=$BASE_DIR/build/obj                 # Object directory of the project (obj directory stores all the object files)
-    LIB_DIR=$BASE_DIR/build/lib                 # Library directory of the project (lib directory stores all the compiled library files)
-    ALANG_DIR=$BASE_DIR/src/alang               # C Compiler directory of the project (alang directory stores the C compiler files)
-    IDE_DIR=$BASE_DIR/src/as/ide                # ARM Assembly IDE directory of the project (ide directory stores the ARM Assembly IDE files)
-    IDE_OBJ_DIR=$BASE_DIR/build/obj/ide         # Object directory of the project (obj directory stores all the object files)
-    EDITOR_SRC_DIR=$BASE_DIR/src/cpp/editor     # Editor source directory of the project (editor directory stores all the editor source files)
-    EDITOR_OBJ_DIR=$BASE_DIR/build/obj/editor   # Editor object directory of the project (editor directory stores all the editor object files)
+    BASE_DIR=$(pwd)                     # Get the current working directory and store it in BASE_DIR (base directory of the project)
+    SRC_DIR=$BASE_DIR/src               # Source directory of the project (src directory stores all source files and are the only files to be modified the rest is automated)
+    C_SRC_DIR=$BASE_DIR/src/c           # C source directory of the project (c directory stores all the C source files)
+    CPP_SRC_DIR=$BASE_DIR/src/cpp       # C source directory of the project (c directory stores all the C source files)
+    AS_SRC_DIR=$BASE_DIR/src/as         # Assembly source directory of the project (as directory stores all the assembly source files)
+    BUILD_DIR=$BASE_DIR/build           # Build directory of the project (build directory stores all the compiled files and the final executable)
+    BIN_DIR=$BASE_DIR/build/bin         # Binary directory of the project (bin directory stores the executable files for the project)
+    OBJ_DIR=$BASE_DIR/build/obj         # Object directory of the project (obj directory stores all the object files)
+    INCLUDE_DIR=$BASE_DIR/src/include   # Header directory of the project (header directory stores all the header files)
 #
 
 print() {
@@ -97,11 +45,12 @@ cerr() {
 
 print_if_folder_not_empty() {
     folder=$1
-    if [ -z "$(ls -A $folder)" ]; then
-        return
-    else
-        printc $2 $3
-    fi
+    for file in "$folder"/*; do
+        if [ -f "$file" ]; then
+            printc $2 $3
+            break
+        fi
+    done
 }
 
 printf () {
@@ -241,12 +190,13 @@ Configure() {
     dirExists $BUILD_DIR        # Check if 'build'              directory exists
     dirExists $BIN_DIR          # Check if 'build/bin'          directory exists
     dirExists $OBJ_DIR          # Check if 'build/obj'          directory exists
+    dirExists $INCLUDE_DIR      # Check if 'src/include'        directory exists
 
     printc "Run 'AMake <options> <-y>' '--help' For Help" Green
 }
 
 assembleFiles() {
-    printc "Assembling As Files Into Obj Files" Green
+    print_if_folder_not_empty $AS_SRC_DIR "Assembling As Files Into Obj Files" Green
     
     for file in "$AS_SRC_DIR"/*".s"                                                                     # Loop through all the files in the src/as directory
     {
@@ -277,7 +227,7 @@ compileCFiles() {
 }
 
 compileCppFiles() {
-    printc "Compiling CPP Files Into Obj Files" Green
+    printc "Compiling CPP Files -> Obj Files" Green
 
     for file in "$CPP_SRC_DIR"/*".cpp"
     {
@@ -380,7 +330,9 @@ Install() {
         fi
     done
 
+    printc "Linking Object Files -> $BIN_DIR/$exeName" Green
     clang++ $args -o $BIN_DIR/$exeName -lSDL2
+    check_file_size $BIN_DIR/$exeName
 }
 
 Clean() {
@@ -410,7 +362,6 @@ Clean() {
 }
 
 Build() {
-    Configure
     assembleFiles
     compileCFiles
     compileCppFiles
