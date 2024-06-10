@@ -16,7 +16,7 @@ using namespace std;
         num &= ~(1u << bit);
     }
 #pragma endregion
-#pragma region Engine::'Object2D'
+#pragma region Engine::Object2D
     auto Engine::   Object::    init        ( const ObjectData2D& data )                ->  void
     {
         this->data = data;
@@ -55,7 +55,7 @@ using namespace std;
         return data.state;
     }
 #pragma endregion
-#pragma region Engine::'Base'
+#pragma region Engine::Base
     auto Engine::   Base::  run             ()                        ->  int
     {
         init();
