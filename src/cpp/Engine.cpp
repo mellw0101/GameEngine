@@ -1,73 +1,69 @@
 #include "../include/Engine.hpp"
+#include <algorithm>
 
 using namespace std;
 
-#pragma region 'Engine::Object'
-    auto Engine::   Object::   init     ( const ObjectData2D& data )
-    -> void
+#pragma region 'Tools'
+    Engine::Time* Engine::Time::instance = nullptr;
+    mutex Engine::Time::mutex;
+    
+    void setBit     ( u32 &num, u32 bit ) // Set the bit at position `bit` to 1
+    {
+        num |= (1u << bit);
+    }
+    void clearBit   ( u32 &num, u32 bit ) // Clear the bit at position `bit` to 0
+    {
+        num &= ~(1u << bit);
+    }
+#pragma endregion
+#pragma region Engine::'Object2D'
+    auto Engine::   Object::    init        ( const ObjectData2D& data )                ->  void
     {
         this->data = data;
     }
-    auto Engine::   Object::   move     ( s32 Direction, f32 speed_override )
-    -> void
+    auto Engine::   Object::    move        ( Vec2D vel )                               ->  void
     {
-        s32 speed = (speed_override == 0) ? data.speed : speed_override;
+        vel.x = (data.position.x + data.w + vel.x >= SCREEN_WIDTH ) ? SCREEN_WIDTH  - data.position.x - data.w : vel.x;
+        vel.y = (data.position.y + data.h + vel.y >= SCREEN_HEIGHT) ? SCREEN_HEIGHT - data.position.y - data.h : vel.y;
+        
+        vel.x = (data.position.x + vel.x <= 0) ? -data.position.x : vel.x;
+        vel.y = (data.position.y + vel.y <= 0) ? -data.position.y : vel.y;
 
-        Vec2D movement(0, 0);
-
-        if (Direction & Direction::UP)
-        {
-            if (data.position.y > 0)
-            {
-                movement.y -= speed;
-            }
-        }
-        if (Direction & Direction::DOWN)
-        {
-            if (data.position.y + data.h < SCREEN_HEIGHT)
-            {
-                movement.y += speed;
-            }
-        }
-        if (Direction & Direction::LEFT)
-        {
-            if (data.position.x > 0)
-            {
-                movement.x -= speed;
-            }
-        }
-        if (Direction & Direction::RIGHT)
-        {
-            if (data.position.x + data.w < SCREEN_WIDTH)
-            {
-                movement.x += speed;
-            }
-        }
-
-        // Update the position using the calculated movement vector
-        data.position += movement;
+        data.position += vel;
     }
-    auto Engine::   Object::   draw     ( SDL_Renderer* renderer )              const
-    -> void
+    auto Engine::   Object::    draw        ( SDL_Renderer* renderer )            const ->  void
     {
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        SDL_Rect dotRect = { data.position.getXInt(), data.position.getYInt(), data.w, data.h };
-        SDL_RenderFillRect(renderer, &dotRect);
+        SDL_Rect currentRect = rect();
+        SDL_RenderFillRect(renderer, &currentRect);
     }
-    auto Engine::   Object::   isStatic ()                                      const
-    -> bool
+    auto Engine::   Object::    isStatic    ()                                    const ->  bool
     {
-        return data.staticObject;
+        return (data.state & (ObjectState::STATIC)) ? true : false;
+    }
+    auto Engine::   Object::    rect        ()                                    const ->  SDL_Rect
+    {
+        SDL_Rect rect = { data.position.getXInt(), data.position.getYInt(), data.w, data.h };
+        return rect;
+    }
+    auto Engine::   Object::    frect       ()                                    const ->  SDL_FRect
+    {
+        return { data.position.x, data.position.y, static_cast<f32>(data.w), static_cast<f32>(data.h) };
+    }
+    auto Engine::   Object::    state       ()                                    const ->  u32
+    {
+        return data.state;
     }
 #pragma endregion
-#pragma region 'Engine::Base'
-    auto Engine::   Base::  run             ()
-    -> int
+#pragma region Engine::'Base'
+    auto Engine::   Base::  run             ()                        ->  int
     {
         init();
         while (running)
         {
+            frames++;
             pollForEvents();
+            applyPhysics();
             logic();
             clear();
             draw();
@@ -76,56 +72,80 @@ using namespace std;
         cleanup();
         return 0;
     }
+    auto Engine::   Base::  createObject    ( const Object& object )  ->  void
+    {
+        objects.emplace_back(object);
+    }
+    auto Engine::   Base::  init            ()                        ->  int
+    {
+        initSDL();
+        createWindow();
+        createRenderer();
+        setupKeys();
+        return 0;
+    }
+    
     #pragma region 'Sub Functions' run
-        auto Engine::   Base::  cleanup ()
-        -> void
+        auto Engine::   Base::  cleanup         ()  ->  void
         {
             SDL_DestroyRenderer(renderer);
             SDL_DestroyWindow(window);
             SDL_Quit();
         }
-        #pragma region logic 'Sub Functions' 
-            auto Engine::   Base::  applyPhysics ()
-            -> void
+        auto Engine::   Base::  logic           ()  ->  void
+        {
+            KeyObject::Instance()->handleKeyEvent();
+        }
+        auto Engine::   Base::  applyPhysics    ()  ->  void
+        {
+            for (auto& object : objects)
             {
-                /// NOTE: This Is The Gravity Function
-                for (auto& object : objects)
+                // Only apply gravity if the object is not static
+                if (object.state() & ObjectState::STATIC)
                 {
-                    if (object.isStatic() == false)
+                    continue;
+                }
+
+                // Apply Gravity
+                object.move({0.0f, GRAVITY});
+
+                // Check if the object is on the ground
+                if (object.data.position.y + object.data.h == SCREEN_HEIGHT)
+                {
+                    object.data.state |= ObjectState::ON_GROUND;
+                }
+                else
+                {
+                    object.data.state &= ~ObjectState::ON_GROUND;
+                }
+
+                for (auto& other : objects)
+                {
+                    if (&object == &other)
                     {
-                        object.move(Direction::DOWN, 3);
+                        continue;
                     }
                 }
             }
-        #pragma endregion
-        auto Engine::   Base::  logic           ()
-        -> void
-        {
-            applyPhysics();
-            KeyObject::Instance()->handleKeyEvent();
-        }
-        auto Engine::   Base::  clear           ()
-        -> void
+        }     
+        auto Engine::   Base::  clear           ()  ->  void
         {
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);
         }
-        auto Engine::   Base::  draw            ()
-        -> void
+        auto Engine::   Base::  draw            ()  ->  void
         {
             for (auto const& object : objects)
             {
                 object.draw(renderer);
             }
         }
-        auto Engine::   Base::  update          ()
-        -> void
+        auto Engine::   Base::  update          ()  ->  void
         {
             SDL_RenderPresent(renderer);        // Update screen
-            SDL_Delay(16);                  // Approximately 60 frames per second
+            SDL_Delay(8);                  // Approximately 60 frames per second
         }
-        auto Engine::   Base::  pollForEvents   ()
-        -> void
+        auto Engine::   Base::  pollForEvents   ()  ->  void
         {
             while (SDL_PollEvent(&event))
             {
@@ -136,18 +156,8 @@ using namespace std;
             }
         }
     #pragma endregion
-    auto Engine::   Base::  init            ()
-    -> int
-    {
-        initSDL();
-        createWindow();
-        createRenderer();
-        setupMovementKeys();
-        return 0;
-    }
     #pragma region 'Sub Functions' init
-        auto Engine::   Base::  initSDL              ()
-        -> int
+        auto Engine::   Base::  initSDL         ()  ->  int
         {
             if (SDL_Init(SDL_INIT_VIDEO) < 0)
             {
@@ -156,8 +166,7 @@ using namespace std;
             }
             return 0;
         }
-        auto Engine::   Base::  createWindow         ()
-        -> int
+        auto Engine::   Base::  createWindow    ()  ->  int
         {
             window = SDL_CreateWindow
             (
@@ -175,8 +184,7 @@ using namespace std;
             }
             return 0;
         }
-        auto Engine::   Base::  createRenderer       ()
-        -> int
+        auto Engine::   Base::  createRenderer  ()  ->  int
         {
             renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
             if (!renderer)
@@ -187,67 +195,61 @@ using namespace std;
             }
             return 0;
         }
-        auto Engine::   Base::  setupMovementKeys    ()
-        -> void
+        auto Engine::   Base::  setupKeys       ()  ->  void
         {
-            KeyObject::Instance()->addActionForKey(SDL_SCANCODE_W, [&]()
-            -> void
+            KeyObject::Instance()->addActionForKey(SDL_SCANCODE_W,      [&]()  ->  void
             {
                 for (auto& object : objects)
                 {
-                    if (object.isStatic() == false)
-                    {
-                        object.move(Direction::UP);
-                    }
+                    ((object.state() & ObjectState::STATIC) == false) ? object.move({0.0, -object.data.speed}) : void();
                 }
             });
-            KeyObject::Instance()->addActionForKey(SDL_SCANCODE_S, [&]() 
-            -> void
+            KeyObject::Instance()->addActionForKey(SDL_SCANCODE_S,      [&]()  ->  void
             {
                 for (auto& object : objects)
                 {
-                    if (object.isStatic() == false)
-                    {
-                        object.move(Direction::DOWN);
-                    }
+                    ((object.state() & ObjectState::STATIC) == false) ? object.move({0.0, object.data.speed}) : void();
                 }
             });
-            KeyObject::Instance()->addActionForKey(SDL_SCANCODE_A, [&]()
-            -> void
+            KeyObject::Instance()->addActionForKey(SDL_SCANCODE_A,      [&]()  ->  void
             {
                 for (auto& object : objects)
                 {
-                    if (object.isStatic() == false)
-                    {
-                        object.move(Direction::LEFT);
-                    }
+                    ((object.state() & ObjectState::STATIC) == false) ? object.move({-object.data.speed, 0.0}) : void();
                 }
             });
-            KeyObject::Instance()->addActionForKey(SDL_SCANCODE_D, [&]()
-            -> void
+            KeyObject::Instance()->addActionForKey(SDL_SCANCODE_D,      [&]()  ->  void
             {
                 for (auto& object : objects)
                 {
-                    if (object.isStatic() == false)
-                    {
-                        object.move(Direction::RIGHT);
-                    }
+                    ! (object.state() & ObjectState::STATIC) ? object.move({object.data.speed, 0.0}) : void();
                 }
             });
-            KeyObject::Instance()->addActionForKey(SDL_SCANCODE_ESCAPE, [&]()
-            -> void
+            KeyObject::Instance()->addActionForKey(SDL_SCANCODE_ESCAPE, [&]()  ->  void
             {
                 running = false;
             });
+            KeyObject::Instance()->addActionForKey(SDL_SCANCODE_SPACE,  [&]()  ->  void
+            {
+                for (auto& object : objects)
+                {
+                    if (object.state() & ObjectState::STATIC)       // If the object is static, skip
+                    {
+                        continue;
+                    }
+                    if (object.state() & ObjectState::IS_PLAYER)    // If the object is a player, jump
+                    {
+                        // if (object.state() & ObjectState::ON_GROUND) // If the player is on the ground, jump
+                        // {
+                        // }
+                        object.move({0, -10});
+                    }
+                }
+            });
         }
     #pragma endregion
-    auto Engine::   Base::  createObject    ( const Object& object )
-    -> void
-    {
-        objects.emplace_back(object);
-    }
-
-    Engine::Base::Base (const string& window_title, int window_width, int window_height)
+    
+    Engine::Base::          Base            ( const string& window_title, int window_width, int window_height )
     : window_title(window_title), SCREEN_WIDTH(window_width), SCREEN_HEIGHT(window_height)
     {
         Engine::SCREEN_WIDTH    = SCREEN_WIDTH;

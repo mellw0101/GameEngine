@@ -234,7 +234,7 @@ compileCppFiles() {
         base_file_name=$(basename $file .cpp)
         if [ -f "$file" ]; then
             printc "$CPP_SRC_DIR/$base_file_name.cpp  ->  $OBJ_DIR/$base_file_name.o" Blue
-            clang++ -c $file -o $OBJ_DIR/$base_file_name.o
+            clang++ -O3 -march=native -c $file -o $OBJ_DIR/$base_file_name.o
             check_file_size $CPP_SRC_DIR/$base_file_name.cpp
             check_file_size $OBJ_DIR/$base_file_name.o
         fi
@@ -331,7 +331,7 @@ Install() {
     done
 
     printc "Linking Object Files -> $BIN_DIR/$exeName" Green
-    clang++ $args -o $BIN_DIR/$exeName -lSDL2
+    clang++ -O3 -march=native $args -o $BIN_DIR/$exeName -lSDL2
     check_file_size $BIN_DIR/$exeName
 }
 
