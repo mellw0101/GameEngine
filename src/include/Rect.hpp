@@ -63,11 +63,11 @@ public:
         return {static_cast<f32>(x), static_cast<f32>(y), static_cast<f32>(w), static_cast<f32>(h)};
     }
 
-    FORCE_INLINE bool PointInRect(const Pair<f32>* p, const Rect* r)
-    {
-        return ( (p->x >= r->x) && (p->x < (r->x + r->w)) &&
-                (p->y >= r->y) && (p->y < (r->y + r->h)) ) ? true : false;
-    }
+//    FORCE_INLINE bool PointInRect(const * p, const Rect* r)
+//    {
+//        return ( (p->x >= r->x) && (p->x < (r->x + r->w)) &&
+//                (p->y >= r->y) && (p->y < (r->y + r->h)) ) ? true : false;
+//    }
 
     /**
      * Returns true if the rectangle has no area.

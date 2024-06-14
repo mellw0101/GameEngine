@@ -80,5 +80,7 @@
         "queue": "cpp",
         "stack": "cpp",
         "__node_handle": "cpp"
-    }
+    },
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "xaver.clang-format"
 }
