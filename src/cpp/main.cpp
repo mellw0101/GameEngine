@@ -1,6 +1,7 @@
 #include <Mlib/Assert.h>
 #include <Mlib/Sdl2.h>
 #include <SDL2/SDL_rect.h>
+#include <string>
 
 using namespace std;
 using namespace Mlib;
@@ -12,6 +13,23 @@ const char* const& Title = "Test";
 
 Sdl2::Core*      engine = Sdl2::Core::Instance(Title, 800, 600);
 Sdl2::KeyObject* key    = Sdl2::KeyObject::Instance();
+
+static f32 const         FPS          = 120.0f;
+static f32 const         timePerFrame = 1.0f / FPS;
+static Sdl2::Vec2D const acceleration(0.0f, 9.81f);
+
+void
+calculate_gravity_effect(double time_ms)
+{
+    double g      = 9.81;
+    double time_s = time_ms / 1000.0;
+
+    double velocity = g * time_s;
+    double distance = 0.5 * g * time_s * time_s;
+
+    std::cout << "Velocity: " << to_string(velocity) << " m/s" << std::endl;
+    std::cout << "Distance: " << to_string(distance) << " m" << std::endl;
+}
 
 int
 main(int argc, char* argv[])
@@ -26,9 +44,9 @@ main(int argc, char* argv[])
         SDL_SCANCODE_W,
         [&]() -> void
         {
-            for (auto& object : engine->getObjects())
+            for (auto const& object : engine->getObjects())
             {
-                ((object.state() & Sdl2::State::STATIC) == false) ? object.move({0.0, -object.data.speed}) : void();
+                ((object->state() & Sdl2::State::STATIC) == false) ? object->move({0.0, -object->data.speed}) : void();
             }
         });
     key->addActionForKey(
@@ -37,7 +55,7 @@ main(int argc, char* argv[])
         {
             for (auto& object : engine->getObjects())
             {
-                (object.state() & Sdl2::State::IS_PLAYER) ? object.move({0.0, object.data.speed}) : void();
+                (object->state() & Sdl2::State::IS_PLAYER) ? object->move({0.0, object->data.speed}) : void();
             }
         });
     key->addActionForKey(
@@ -46,7 +64,7 @@ main(int argc, char* argv[])
         {
             for (auto& object : engine->getObjects())
             {
-                ((object.state() & Sdl2::State::STATIC) == false) ? object.move({-object.data.speed, 0.0}) : void();
+                (object->state() & Sdl2::State::IS_PLAYER) ? object->move({-object->data.speed, 0.0}) : void();
             }
         });
     key->addActionForKey(
@@ -55,7 +73,7 @@ main(int argc, char* argv[])
         {
             for (auto& object : engine->getObjects())
             {
-                ((object.state() & Sdl2::State::STATIC) == false) ? object.move({object.data.speed, 0.0}) : void();
+                ((object->state() & Sdl2::State::STATIC) == false) ? object->move({object->data.speed, 0.0}) : void();
             }
         });
     key->addActionForKey(SDL_SCANCODE_SPACE,
@@ -64,15 +82,15 @@ main(int argc, char* argv[])
                              for (auto& object : engine->getObjects())
                              {
                                  // If the object is static, skip
-                                 if (object.state() & Sdl2::State::STATIC)
+                                 if (object->state() & Sdl2::State::STATIC)
                                  {
                                      continue;
                                  }
 
                                  // If the object is a player, jump
-                                 if (object.state() & Sdl2::State::IS_PLAYER)
+                                 if (object->state() & Sdl2::State::IS_PLAYER)
                                  {
-                                     object.move({0, -10});
+                                     object->data.position += {0.0, -object->data.speed};
                                  }
                              }
                          });
@@ -83,48 +101,49 @@ main(int argc, char* argv[])
             for (auto& object : engine->getObjects())
             {
                 // If the object is static, skip
-                if (object.state() & Sdl2::State::STATIC)
+                if (object->state() & Sdl2::State::STATIC)
                 {
                     continue;
                 }
 
                 // If the object is a player, apply gravity
-                if (object.state() & Sdl2::State::IS_PLAYER)
+                if (object->state() & Sdl2::State::IS_PLAYER)
                 {
-                    for (auto& other : engine->getObjects())
+                    for (auto const& other : engine->getObjects())
                     {
-                        // If the object is static, skip
-                        if (other.state() & Sdl2::State::STATIC)
+                        if (other->state() & Sdl2::State::STATIC)
                         {
-                            u32 const X = object.data.position.x;
-                            u32 const Y = object.data.position.y;
-                            u32 const W = object.data.w;
-                            u32 const H = object.data.h;
+                            f64 const X = object->data.position.x;
+                            f64 const Y = object->data.position.y;
+                            f64 const W = object->data.w;
+                            f64 const H = object->data.h;
 
-                            u32 const oX = other.data.position.x;
-                            u32 const oY = other.data.position.y;
-                            u32 const oW = other.data.w;
-                            u32 const oH = other.data.h;
+                            f64 const oX = other->data.position.x;
+                            f64 const oY = other->data.position.y;
+                            f64 const oW = other->data.w;
+                            f64 const oH = other->data.h;
 
                             if (X <= oX + oW && X + W >= oX && Y <= oY + oH && Y + H >= oY)
                             {
-                                object.move({0, -3});
+                                object->data.velocity = {0.0f, 0.0f};
+                                object->data.velocity -= Sdl2::velocityChange;
                             }
                         }
                     }
-                    object.move({0, 3});
+                    object->data.velocity += Sdl2::velocityChange;
+                    object->move(object->data.velocity);
                 }
             }
         });
 
     // Main Player
     engine->createObject({
-        {{(SCREEN_WIDTH / 2), (SCREEN_HEIGHT / 2)}, 10, 10, 5, Mlib::Sdl2::State::IS_PLAYER}
+        {{((f64)SCREEN_WIDTH / 2), ((f64)SCREEN_HEIGHT / 2)}, {}, 10, 10, 5, Mlib::Sdl2::State::IS_PLAYER}
     });
 
     // Static Object ( Floor )
     engine->createObject({
-        {{SCREEN_WIDTH - 50, SCREEN_HEIGHT / 2}, 50, 2, 5, Mlib::Sdl2::State::STATIC}
+        {{0, SCREEN_HEIGHT - 20}, {}, SCREEN_WIDTH, 2, 5, Mlib::Sdl2::State::STATIC}
     });
 
     return engine->run();
