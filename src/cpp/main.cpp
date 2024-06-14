@@ -1,7 +1,6 @@
 #include <Mlib/Assert.h>
+#include <Mlib/Profile.h>
 #include <Mlib/Sdl2.h>
-#include <SDL2/SDL_rect.h>
-#include <string>
 
 using namespace std;
 using namespace Mlib;
@@ -34,6 +33,8 @@ calculate_gravity_effect(double time_ms)
 int
 main(int argc, char* argv[])
 {
+    Profile::setupReportGeneration();
+
     ASSERT_STATEMENT(SCREEN_WIDTH == 800);
     key->addActionForKey(SDL_SCANCODE_ESCAPE,
                          [&]() -> void
@@ -44,6 +45,7 @@ main(int argc, char* argv[])
         SDL_SCANCODE_W,
         [&]() -> void
         {
+            Profile::AutoTimer timer("key->addActionForKey(SDL_SCANCODE_W)");
             for (auto const& object : engine->getObjects())
             {
                 ((object->state() & Sdl2::State::STATIC) == false) ? object->move({0.0, -object->data.speed}) : void();
@@ -53,6 +55,7 @@ main(int argc, char* argv[])
         SDL_SCANCODE_S,
         [&]() -> void
         {
+            Profile::AutoTimer timer("key->addActionForKey(SDL_SCANCODE_S)");
             for (auto& object : engine->getObjects())
             {
                 (object->state() & Sdl2::State::IS_PLAYER) ? object->move({0.0, object->data.speed}) : void();
@@ -62,6 +65,7 @@ main(int argc, char* argv[])
         SDL_SCANCODE_A,
         [&]() -> void
         {
+            Profile::AutoTimer timer("key->addActionForKey(SDL_SCANCODE_A)");
             for (auto& object : engine->getObjects())
             {
                 (object->state() & Sdl2::State::IS_PLAYER) ? object->move({-object->data.speed, 0.0}) : void();
@@ -71,6 +75,7 @@ main(int argc, char* argv[])
         SDL_SCANCODE_D,
         [&]() -> void
         {
+            Profile::AutoTimer timer("key->addActionForKey(SDL_SCANCODE_D)");
             for (auto& object : engine->getObjects())
             {
                 ((object->state() & Sdl2::State::STATIC) == false) ? object->move({object->data.speed, 0.0}) : void();
@@ -79,7 +84,8 @@ main(int argc, char* argv[])
     key->addActionForKey(SDL_SCANCODE_SPACE,
                          [&]() -> void
                          {
-                             for (auto& object : engine->getObjects())
+                             Profile::AutoTimer timer("key->addActionForKey(SDL_SCANCODE_SPACE)");
+                             for (auto const& object : engine->getObjects())
                              {
                                  // If the object is static, skip
                                  if (object->state() & Sdl2::State::STATIC)
@@ -98,6 +104,7 @@ main(int argc, char* argv[])
     engine->setMainLoop(
         [&]() -> void
         {
+            Profile::AutoTimer timer("engine->setMainLoop()");
             for (auto& object : engine->getObjects())
             {
                 // If the object is static, skip
@@ -123,9 +130,10 @@ main(int argc, char* argv[])
                             f64 const oW = other->data.w;
                             f64 const oH = other->data.h;
 
-                            if (X <= oX + oW && X + W >= oX && Y <= oY + oH && Y + H >= oY)
+                            if (X < oX + oW && X + W > oX && Y < oY + oH && Y + H > oY)
                             {
-                                object->data.velocity = {0.0f, 0.0f};
+                                object->data.velocity   = {0.0, 0.0};
+                                object->data.position.y = oY - H;
                                 object->data.velocity -= Sdl2::velocityChange;
                             }
                         }
@@ -138,12 +146,12 @@ main(int argc, char* argv[])
 
     // Main Player
     engine->createObject({
-        {{((f64)SCREEN_WIDTH / 2), ((f64)SCREEN_HEIGHT / 2)}, {}, 10, 10, 5, Mlib::Sdl2::State::IS_PLAYER}
+        {{((f64)SCREEN_WIDTH / 2), ((f64)SCREEN_HEIGHT / 2)}, {}, 10, 10, 5, Sdl2::State::IS_PLAYER}
     });
 
     // Static Object ( Floor )
     engine->createObject({
-        {{0, SCREEN_HEIGHT - 20}, {}, SCREEN_WIDTH, 2, 5, Mlib::Sdl2::State::STATIC}
+        {{0, SCREEN_HEIGHT - 20}, {}, SCREEN_WIDTH, 20, 0, Sdl2::State::STATIC}
     });
 
     return engine->run();
