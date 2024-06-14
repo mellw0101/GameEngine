@@ -1,0 +1,16 @@
+<toolSet name="External Tools">
+  <tool name="Amake Build" description="Uses Amake FrameWork To Build Project" showInMainMenu="false" showInEditor="false" showInProject="false" showInSearchPopup="false" disabled="false" useConsole="true" showConsoleOnStdOut="false" showConsoleOnStdErr="false" synchronizeAfterRun="true">
+    <exec>
+      <option name="COMMAND" value="Amake" />
+      <option name="PARAMETERS" value="-y --configure --build --install" />
+      <option name="WORKING_DIRECTORY" value="$ContentRoot$" />
+    </exec>
+  </tool>
+  <tool name="Amake Clean" description="Uses Amake FrameWork To Clean Project" showInMainMenu="false" showInEditor="false" showInProject="false" showInSearchPopup="false" disabled="false" useConsole="true" showConsoleOnStdOut="false" showConsoleOnStdErr="false" synchronizeAfterRun="true">
+    <exec>
+      <option name="COMMAND" value="Amake" />
+      <option name="PARAMETERS" value="-y --clean" />
+      <option name="WORKING_DIRECTORY" value="$CMakeProjectDir$" />
+    </exec>
+  </tool>
+</toolSet>

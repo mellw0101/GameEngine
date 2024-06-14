@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CLionExternalBuildManager">
+    <target id="770c9c15-dd7f-4c9a-aa6c-248d995241a0" name="Amake" defaultType="TOOL">
+      <configuration id="5d8c4ee9-3c49-4746-be13-641c40fdcc79" name="Amake" toolchainName="System">
+        <build type="TOOL">
+          <tool actionId="Tool_External Tools_Amake Build" />
+        </build>
+        <clean type="TOOL">
+          <tool actionId="Tool_External Tools_Amake Clean" />
+        </clean>
+      </configuration>
+    </target>
+  </component>
+</project>
